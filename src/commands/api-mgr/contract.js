@@ -62,6 +62,27 @@ function contractDelete (session) {
   }
 }
 
+function contractRevoke (session) {
+  return function (args) {
+    var self = this
+    return getContractByClientId.call(
+          self, session, args.apiInstanceId, args.clientId)
+      .then(function (contract) {
+        var url = uris.contract(session, args.apiInstanceId, contract.id)
+        var req = {
+          url: url,
+          body: {status: "REVOKED"}
+        }
+        return session.patch(req)
+      })
+      .then(function () {
+        self.log(fmt(
+          'Contract revoked from API instance with ID "%s"',
+          args.apiInstanceId))
+      })
+  }
+}
+
 function getContractByClientId (session, apiInstanceId, clientId) {
   var getData = uris.contractsClientIDQuery(
     session, apiInstanceId, clientId)
@@ -90,4 +111,10 @@ module.exports = function (cli, session) {
              'Delete a given API contract')
     .types({string: ['clientId']})
     .action(contractDelete(session))
+
+  cli
+    .command('api-mgr contract revoke <apiInstanceId> <clientId>',
+             'Revoke a given API contract')
+    .types({string: ['clientId']})
+    .action(contractRevoke(session))    
 }
